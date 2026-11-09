@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wissenswiki-core"
+version = "0.1.0"
+description = "Wissensblöcke, typisierte Beziehungen und Wissensnetz – Kern und schlanke Web-App"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+wissenswiki = "wissenswiki_core.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["wissenswiki_core*"]
+
+[tool.setuptools.package-data]
+wissenswiki_core = ["pages/*.html", "static/wissenswiki/*.css", "static/wissenswiki/*.js"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
