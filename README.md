@@ -35,6 +35,9 @@ wissenswiki serve --workspace ~/dev_wiki \
 wissenswiki serve --config wiki.yaml --port 8790   # alternativ
 ```
 
+Für den Solo-Betrieb mit Startskript siehe [Nutzung](doc/USAGE.md).
+Eine Beispielkonfiguration liegt in `wiki.example.yaml`.
+
 Die YAML-Datei nutzt dieselben Schlüssel wie `settings.WISSENSWIKI` in Django: `WORKSPACE`, `DOMAINS` und `MARKDOWN_DATA`.
 Das Schema steht in `wissenswiki_core/registry.py`.
 

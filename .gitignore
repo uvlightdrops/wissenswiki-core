@@ -3,3 +3,4 @@ __pycache__/
 build/
 .venv/
 .pytest_cache/
+wiki.yaml
