@@ -39,6 +39,12 @@ def test_pages_static_and_domain_api(server):
     status, headers, page = request(server, "GET", "/graph-header/?domain=Doku")
     assert status == 200 and "frame-ancestors 'none'" in headers["Content-Security-Policy"]
     assert 'href="/settings/"' in page and '/graph-header/?domain=Doku' in page and "${" not in page
+    status, _, settings_page = request(server, "GET", "/settings/?domain=Doku")
+    assert status == 200 and 'id="graph-height"' in settings_page and 'type="range"' in settings_page
+    assert 'id="attribute-preset"' not in settings_page
+    assert all(f'id="show-{preset}"' in settings_page for preset in ("block", "all", "none"))
+    assert 'id="attribute-selection"' in settings_page
+    assert "Dokumentkontext" in settings_page
     assert request(server, "GET", "/static/wissenswiki/graph.js")[0] == 200
     assert request(server, "GET", "/static/wissenswiki/../pages/graph.html")[0] == 404
     status, _, body = request(server, "GET", "/api?domain=Doku")
@@ -76,6 +82,24 @@ def test_pages_escape_domain_names():
     assert "&lt;b&gt;&quot;x" in page and "<b>" not in page
     with pytest.raises(ValueError):
         render_page("nope", urls=urls, token="t", path="/", workspace_enabled=False, domains=[])
+
+
+@pytest.mark.parametrize("view", ["graph", "graph-header"])
+def test_graph_pages_include_block_content_widget(view):
+    urls = PageUrls("/api", "/s/", "/", "/g/", "/gh/", "/st/")
+    page = render_page(view, urls=urls, token="t", path="/g/", workspace_enabled=True, domains=[])
+    assert '<summary>Blockinhalt</summary>' in page
+    assert 'id="block-content"' in page
+    assert 'aria-label="Inhalt von Ausgang und Ziel"' in page
+
+
+@pytest.mark.parametrize("view", ["workspace", "graph", "graph-header", "settings"])
+def test_pages_accept_optional_trusted_host_navigation(view):
+    urls = PageUrls("/api", "/s/", "/", "/g/", "/gh/", "/st/")
+    arguments = dict(urls=urls, token="t", path="/g/", workspace_enabled=True, domains=[])
+    assert "${" not in render_page(view, **arguments)
+    navigation = '<nav aria-label="Host">Application</nav>'
+    assert render_page(view, app_navigation=navigation, **arguments).count(navigation) == 1
 
 
 def test_core_imports_no_framework():

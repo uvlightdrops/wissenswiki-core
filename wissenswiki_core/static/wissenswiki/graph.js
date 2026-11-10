@@ -26,17 +26,23 @@ let blocks = [], nodes = [], edges = [], dragged = null, moved = false, revision
 let positions = new Map();
 const settingsKey = "wissenswiki.graph.v1." + (domain ? "domain." + domain : "wiki");
 let savedSettings = {}, settingsError = "";
+let graphHeight = null;
 try {
     savedSettings = JSON.parse(localStorage.getItem(settingsKey) || "{}");
     if (!savedSettings || typeof savedSettings !== "object" || Array.isArray(savedSettings)) {
         throw new Error("Ungültiges Format");
     }
+    if (Number.isInteger(savedSettings.graphHeight) &&
+        savedSettings.graphHeight >= 30 && savedSettings.graphHeight <= 100) {
+        graphHeight = savedSettings.graphHeight;
+        svg.style.setProperty("--graph-height", `${graphHeight}vh`);
+    }
 } catch (error) {
     settingsError = `Ansichtseinstellungen konnten nicht gelesen werden: ${error.message}`;
 }
 colorMode.value = savedSettings.color === "folder" ? "folder" : "uniform";
-let hiddenAttributes = new Set(DEFAULT_HIDDEN_ATTRIBUTES);
-try { hiddenAttributes = loadHiddenAttributes(domain); }
+let attributeSettings = {preset: "block", hidden: []};
+try { attributeSettings = loadAttributeSettings(domain); }
 catch (error) {
     settingsError = [settingsError, `Attributeinstellungen konnten nicht gelesen werden: ${error.message}`]
         .filter(Boolean).join(" | ");
@@ -51,7 +57,8 @@ function saveSettings() {
         localStorage.setItem(settingsKey, JSON.stringify({
             color: colorMode.value, folder: folderFilter.value, file: fileFilter.value,
             relation: relationFilter.value,
-            attribute: attributeFilter.value, value: attributeValue.value
+            attribute: attributeFilter.value, value: attributeValue.value,
+            ...(graphHeight === null ? {} : {graphHeight})
         }));
     } catch (error) {
         status.textContent = `Ansichtseinstellungen konnten nicht gespeichert werden: ${error.message}`;
@@ -192,10 +199,20 @@ function showBlock(id) {
     if (!details) return;
     details.replaceChildren();
     if (block) {
-        for (const [name, value] of Object.entries(flattenAttributes(block.attributes))) {
-            const term = document.createElement("dt"), description = document.createElement("dd");
-            term.textContent = name; description.textContent = value;
-            details.append(term, description);
+        const values = flattenAttributes(block.attributes);
+        for (const group of ATTRIBUTE_GROUPS) {
+            const names = Object.keys(values).filter(name =>
+                attributeGroup(name) === group.id && attributeVisible(name, attributeSettings));
+            if (!names.length) continue;
+            const heading = document.createElement("dt");
+            heading.className = "attribute-group";
+            heading.textContent = group.label;
+            details.append(heading);
+            for (const name of names) {
+                const term = document.createElement("dt"), description = document.createElement("dd");
+                term.textContent = name; description.textContent = values[name];
+                details.append(term, description);
+            }
         }
     }
 }
@@ -203,7 +220,7 @@ function showComparison(table) {
     const selected = [source.value, target.value].map(id => blocks.find(block => block.id === id));
     const values = selected.map(block => block ? flattenAttributes(block.attributes) : {});
     const names = [...new Set(values.flatMap(item => Object.keys(item)))]
-        .filter(name => !hiddenAttributes.has(attributeShortName(name)));
+        .filter(name => attributeVisible(name, attributeSettings));
     const cell = (className, text, title = text) => {
         const item = document.createElement("div");
         item.className = className; item.textContent = text; item.title = title;
@@ -212,15 +229,38 @@ function showComparison(table) {
     table.replaceChildren(cell("compare-head", ""),
         cell("compare-head source-column", selected[0] ? label(selected[0]) : "Ausgang: nicht gewählt"),
         cell("compare-head target-column", selected[1] ? label(selected[1]) : "Ziel: nicht gewählt"));
-    for (const name of names) {
-        table.append(cell("compare-name", attributeShortName(name), name),
-            cell("compare-value source-column", values[0][name] ?? ""),
-            cell("compare-value target-column", values[1][name] ?? ""));
+    for (const group of ATTRIBUTE_GROUPS) {
+        const groupNames = names.filter(name => attributeGroup(name) === group.id);
+        if (!groupNames.length) continue;
+        table.append(cell("attribute-group", group.label));
+        for (const name of groupNames) {
+            table.append(cell("compare-name", attributeShortName(name), name),
+                cell("compare-value source-column", values[0][name] ?? ""),
+                cell("compare-value target-column", values[1][name] ?? ""));
+        }
+    }
+}
+function showContent(container) {
+    container.replaceChildren();
+    for (const [name, selection, heading] of [
+        ["source", source, "Ausgang"], ["target", target, "Ziel"]
+    ]) {
+        const block = blocks.find(item => item.id === selection.value);
+        const section = document.createElement("section");
+        section.className = name + "-content";
+        const title = document.createElement("h2");
+        title.textContent = block ? `${heading}: ${label(block)}` : `${heading}: nicht gewählt`;
+        const text = document.createElement("pre");
+        text.textContent = block ? block.text || "Dieser Block hat keinen Textinhalt." : "Bitte einen Block im Netz auswählen.";
+        section.append(title, text);
+        container.append(section);
     }
 }
 function reflectSelection() {
     const comparison = document.getElementById("attribute-compare");
     if (comparison) showComparison(comparison);
+    const content = document.getElementById("block-content");
+    if (content) showContent(content);
     for (const [name, selection] of [["source", source], ["target", target]]) {
         const selected = blocks.find(block => block.id === selection.value);
         document.getElementById(name + "-label").textContent = selected ? label(selected) : "Nicht gewählt";

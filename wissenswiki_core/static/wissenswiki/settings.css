@@ -3,7 +3,16 @@ header{display:flex;flex-wrap:wrap;gap:.4rem 1rem;padding:.6rem 1rem;background:
 header nav{margin-left:auto}header nav a{margin-left:.6rem}a{color:#94d9d0}
 main{max-width:70rem;padding:1rem}h2{font-size:1.15rem;margin:.5rem 0}
 #status{color:#ffaaa0;min-height:1.5em;margin:0}
-button{font:inherit;padding:.3rem .6rem;color:#e3ebe9;background:#2c3b3d;border:1px solid #627775;border-radius:.3rem;cursor:pointer}
-.actions{display:flex;gap:.5rem;margin-bottom:.75rem}
-#attribute-options{display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));gap:.3rem 1rem}
+button,select{font:inherit;padding:.3rem .6rem;color:#e3ebe9;background:#2c3b3d;border:1px solid #627775;border-radius:.3rem}
+button{cursor:pointer}
+.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem}
+.actions button[aria-pressed="true"]{background:#365b55;border-color:#94d9d0}
+#graph-height{width:min(32rem,75vw);accent-color:#70bbb0}
+.range-control{display:flex;align-items:center;gap:.75rem}
+#graph-height-value{min-width:4rem;font-variant-numeric:tabular-nums}
+.hint{margin:.2rem 0 .6rem;color:#b7c6c3;font-size:.9rem}
+#viewport-heading{margin-top:0}
+#attribute-options{display:grid;gap:1rem}
+#attribute-options fieldset{display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:.3rem 1rem;min-width:0;border:1px solid #627775}
+#attribute-options legend{font-weight:bold}
 #attribute-options label{overflow-wrap:anywhere;cursor:pointer}

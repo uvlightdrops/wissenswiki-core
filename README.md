@@ -2,10 +2,15 @@
 project: wissenswiki-core
 scope: Überblick, schlanke Web-App und Einbindung des Kerns
 created: null
-updated: "2026-11-09 11"
-update_reason: Erste Fassung
+updated: "2026-11-10 19"
+update_reason: Startskript und Nutzungsanleitung ergänzt; Auswahlbuttons und JavaScript-Tests dokumentiert
 status: active
 agent_project: ki-knowledge
+semantic_blocks: [package-layout, slim-web-app, tests]
+relations:
+  - target: doc/USAGE.md
+    type: reference
+    reason: Anleitung zum Starten der Solo-Web-App
 ---
 
 # wissenswiki-core
@@ -45,9 +50,23 @@ Die App ist für eine Person auf `localhost` oder im vertrauten LAN gedacht und 
 Schutz bieten eine strenge CSP, die Host-Prüfung über die numerische Adresse sowie für Schreibzugriffe Seiten-Token und `Origin`.
 Für das LAN mit `--host 0.0.0.0` starten und die Seite über die IP-Adresse aufrufen.
 
+Die Einstellungen bieten „Nur Blockattribute“ (Standard), „Alle Attribute“
+und „Keine“ als direkte Buttons. Einzelne Checkboxen bleiben frei schaltbar;
+die aktuelle eigene Auswahl wird als „Benutzerdefiniert“ angezeigt und pro
+Domäne im Browser gespeichert. Die Anzeige trennt
+Eigenschaften der Auswahl, Dokumentkontext und Ablage/Technik. Dokument-Metadaten
+aus `dokument_metadaten` sind Kontext; `metadaten` eigener Wiki-Blöcke gehören
+zum Block. Einzelne Attribute werden über ihren vollständigen Pfad ausgewählt,
+ohne Suche und Filter zu verändern. Bisherige gespeicherte Kurznamenauswahlen
+bleiben wirksam; beim Bearbeiten werden sie für die vorhandenen Attribute
+in vollständige Pfade überführt.
+
 ## Tests [tests]
 
 ```bash
 pip install -e '.[test]'
 python -m pytest -q
+node --test tests/attribute-settings.test.js
 ```
+
+Die JavaScript-Tests benötigen Node.js, aber keine zusätzlichen npm-Pakete.

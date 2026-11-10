@@ -1,6 +1,10 @@
 "use strict";
 
-const DEFAULT_HIDDEN_ATTRIBUTES = ["art", "project", "agent_project"];
+const ATTRIBUTE_GROUPS = [
+    {id: "object", label: "Eigenschaften der Auswahl"},
+    {id: "document", label: "Dokumentkontext"},
+    {id: "storage", label: "Ablage und Technik"}
+];
 
 function flattenAttributes(value, prefix = "", result = {}) {
     for (const [key, item] of Object.entries(value || {})) {
@@ -15,18 +19,45 @@ function flattenAttributes(value, prefix = "", result = {}) {
     return result;
 }
 function attributeShortName(name) { return name.split(".").pop(); }
-function attributeSettingsKey(domainName) {
-    return "wissenswiki.attributes.v1." + (domainName ? "domain." + domainName : "wiki");
+function attributeGroup(name) {
+    if (name === "dokument_metadaten" || name.startsWith("dokument_metadaten.")) return "document";
+    if (["datei", "ordner", "revision"].includes(name)) return "storage";
+    return "object";
 }
-// Liefert die ausgeblendeten Kurznamen; ohne gespeicherte Auswahl gelten die Standardwerte.
-function loadHiddenAttributes(domainName) {
+function attributeSettingsKey(domainName, version = 2) {
+    return `wissenswiki.attributes.v${version}.` + (domainName ? "domain." + domainName : "wiki");
+}
+function stringList(value) {
+    return Array.isArray(value) && value.every(item => typeof item === "string");
+}
+function loadAttributeSettings(domainName) {
     const stored = JSON.parse(localStorage.getItem(attributeSettingsKey(domainName)) || "null");
-    if (stored === null) return new Set(DEFAULT_HIDDEN_ATTRIBUTES);
-    if (!stored || !Array.isArray(stored.hidden) || !stored.hidden.every(item => typeof item === "string")) {
+    if (stored === null) {
+        const legacy = JSON.parse(localStorage.getItem(attributeSettingsKey(domainName, 1)) || "null");
+        if (legacy === null) return {preset: "block", hidden: []};
+        if (!legacy || !stringList(legacy.hidden)) {
+            throw new Error("Ungültiges Format der bisherigen Attributeinstellungen");
+        }
+        return {preset: "custom", hidden: [], legacyHidden: legacy.hidden};
+    }
+    if (!stored || !["block", "all", "custom"].includes(stored.preset) || !stringList(stored.hidden)) {
         throw new Error("Ungültiges Format der Attributeinstellungen");
     }
-    return new Set(stored.hidden);
+    return {preset: stored.preset, hidden: stored.hidden};
 }
-function saveHiddenAttributes(domainName, hidden) {
-    localStorage.setItem(attributeSettingsKey(domainName), JSON.stringify({hidden: [...hidden].sort()}));
+function attributeVisible(name, settings) {
+    if (settings.preset === "block") return attributeGroup(name) === "object";
+    if (settings.preset === "all") return true;
+    return !settings.hidden.includes(name) && !(settings.legacyHidden || []).includes(attributeShortName(name));
+}
+function customAttributeSettings(settings, names) {
+    return {preset: "custom", hidden: [...new Set([
+        ...settings.hidden.filter(name => !names.has(name)),
+        ...[...names].filter(name => !attributeVisible(name, settings))
+    ])]};
+}
+function saveAttributeSettings(domainName, settings) {
+    localStorage.setItem(attributeSettingsKey(domainName), JSON.stringify({
+        preset: settings.preset, hidden: [...settings.hidden].sort()
+    }));
 }

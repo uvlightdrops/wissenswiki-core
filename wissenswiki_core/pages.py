@@ -28,7 +28,8 @@ class PageUrls:
 
 
 def render_page(page: str, *, urls: PageUrls, token: str, path: str,
-                workspace_enabled: bool, domains: Iterable[str]) -> str:
+                workspace_enabled: bool, domains: Iterable[str], app_navigation: str = "") -> str:
+    """Render a page; app_navigation is trusted host-rendered markup, never user input."""
     if page not in PAGES:
         raise ValueError(f"Unbekannte Seite: {page}")
     attr = lambda value: escape(value, quote=True)  # noqa: E731
@@ -44,4 +45,4 @@ def render_page(page: str, *, urls: PageUrls, token: str, path: str,
         api=attr(urls.api), static=attr(urls.static + "wissenswiki/"), token=attr(token),
         url_workspace=attr(urls.workspace), url_graph=attr(urls.graph),
         url_graph_header=attr(urls.graph_header), url_settings=attr(urls.settings),
-        nav=nav, relation_options=options, workspace_link=workspace_link)
+        nav=nav, relation_options=options, workspace_link=workspace_link, app_navigation=app_navigation)

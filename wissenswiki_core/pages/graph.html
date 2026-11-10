@@ -6,6 +6,7 @@
 <title>Wissensnetz</title>
 <link rel="stylesheet" href="${static}graph.css">
 </head><body>
+${app_navigation}
 <header>${workspace_link}<nav aria-label="Domänen">${nav}</nav>
 <button id="reload" type="button">Neu laden</button></header>
 <main>
@@ -37,5 +38,7 @@
 </section>
 </main>
 <details class="attributes-widget" open><summary>Blockattribute</summary><dl id="detail-attributes"></dl></details>
+<details class="attributes-widget" open><summary>Blockinhalt</summary>
+<div id="block-content" class="block-content" aria-label="Inhalt von Ausgang und Ziel"></div></details>
 <script src="${static}attribute-settings.js" defer></script>
 <script src="${static}graph.js" defer></script></body></html>

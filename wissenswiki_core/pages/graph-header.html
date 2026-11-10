@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="${static}graph.css">
 <link rel="stylesheet" href="${static}graph-header.css">
 </head><body class="header-filters">
+${app_navigation}
 <header>
 <div class="header-main">
 <div class="header-row filter-bar" role="group" aria-label="Ansichtsfilter">
@@ -21,9 +22,9 @@
 <span id="count" data-format="short" title="Treffer / insgesamt"></span>
 <button id="reset-settings" type="button">reset</button>
 </div>
-<div class="header-side"><span><a id="settings-link" href="${url_settings}">Einstellungen</a>
-<button id="reload" type="button">Neu laden</button></span>
-<nav aria-label="Domänen">${nav}</nav></div>
+<div class="header-side"><nav aria-label="Domänen">${nav}</nav>
+<span class="header-actions"><a id="settings-link" href="${url_settings}">Einstellungen</a>
+<button id="reload" type="button">Neu laden</button></span></div>
 </div>
 </header>
 <main>
@@ -43,5 +44,7 @@
 </main>
 <details class="attributes-widget" open><summary>Blockattribute</summary>
 <div id="attribute-compare" aria-label="Attribute von Ausgang und Ziel"></div></details>
+<details class="attributes-widget" open><summary>Blockinhalt</summary>
+<div id="block-content" class="block-content" aria-label="Inhalt von Ausgang und Ziel"></div></details>
 <script src="${static}attribute-settings.js" defer></script>
 <script src="${static}graph.js" defer></script></body></html>
