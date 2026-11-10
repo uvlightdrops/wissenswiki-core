@@ -2,8 +2,8 @@
 project: wissenswiki-core
 scope: Überblick, schlanke Web-App und Einbindung des Kerns
 created: null
-updated: "2026-11-10 19"
-update_reason: Startskript und Nutzungsanleitung ergänzt; Auswahlbuttons und JavaScript-Tests dokumentiert
+updated: "2026-11-10 20"
+update_reason: Abgesicherten öffentlichen Zugriff für Uberspace dokumentiert
 status: active
 agent_project: ki-knowledge
 semantic_blocks: [package-layout, slim-web-app, tests]
@@ -46,9 +46,12 @@ Eine Beispielkonfiguration liegt in `wiki.example.yaml`.
 Die YAML-Datei nutzt dieselben Schlüssel wie `settings.WISSENSWIKI` in Django: `WORKSPACE`, `DOMAINS` und `MARKDOWN_DATA`.
 Das Schema steht in `wissenswiki_core/registry.py`.
 
-Die App ist für eine Person auf `localhost` oder im vertrauten LAN gedacht und hat keine Anmeldung.
-Schutz bieten eine strenge CSP, die Host-Prüfung über die numerische Adresse sowie für Schreibzugriffe Seiten-Token und `Origin`.
-Für das LAN mit `--host 0.0.0.0` starten und die Seite über die IP-Adresse aufrufen.
+Standardmäßig ist die App für eine Person auf `localhost` oder im vertrauten LAN
+gedacht und hat keine Anmeldung. Öffentlicher Zugriff ist nur im expliziten
+Modus mit HTTPS-Origin und HTTP-Basisauthentifizierung vorgesehen; Details in
+der [Nutzungsanleitung](doc/USAGE.md).
+Schutz bieten außerdem eine strenge CSP, Host-Prüfung sowie für Schreibzugriffe
+Seiten-Token und `Origin`.
 
 Die Einstellungen bieten „Nur Blockattribute“ (Standard), „Alle Attribute“
 und „Keine“ als direkte Buttons. Einzelne Checkboxen bleiben frei schaltbar;
