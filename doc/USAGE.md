@@ -2,11 +2,11 @@
 project: wissenswiki-core
 scope: Nutzung der schlanken Solo-Web-App
 created: null
-updated: "2026-11-10 20"
-update_reason: Abgesicherten öffentlichen Zugriff über Uberspace ergänzt
+updated: "2026-11-10 21"
+update_reason: Uberspace-Webbackend-Befehle für U7 und U8 ergänzt
 status: active
 agent_project: ki-knowledge
-semantic_blocks: [solo-start, wiki-configuration, server-options, public-access]
+semantic_blocks: [solo-start, wiki-configuration, server-options, public-access, uberspace-backend]
 relations:
   - target: ../README.md
     type: reference
@@ -97,3 +97,45 @@ Uberspace-Backend-Zuordnung und Prozessverwaltung gehören zum
 Das Solo-Wiki liefert derzeit Routen ab der Domainwurzel aus und ist nicht für
 einen Unterpfad wie `/wiki/` angepasst. Dafür eine eigene Domain/Subdomain
 verwenden oder zuerst die Unterstützung für einen Basispfad ergänzen.
+
+## Uberspace-Webbackend einrichten [uberspace-backend]
+
+Die Domain oder Subdomain muss bereits für den Uberspace eingerichtet sein.
+Das Wiki muss als dauerhafter Dienst auf Port `8790` laufen und mit
+`--public-origin https://wiki.example.org` sowie den beiden
+Authentifizierungsvariablen gestartet sein. Der öffentliche Modus bindet an
+`0.0.0.0`; Uberspace-Webbackends benötigen eine öffentliche Bind-Adresse und
+einen Port zwischen `1024` und `65535`.
+
+Eine eigene Subdomain verwenden, damit die bestehende Hauptdomain und deren
+Root-Backend unberührt bleiben. `wiki.example.org` in den Befehlen durch die
+konfigurierte Domain ersetzen.
+
+**Uberspace 7:**
+
+```bash
+uberspace web backend set wiki.example.org/ --http --port 8790
+uberspace web backend list
+```
+
+**Uberspace 8:**
+
+```bash
+uberspace web backend add wiki.example.org/ port 8790
+uberspace web backend list
+```
+
+Die Liste sollte die Domain mit Ziel `8790` anzeigen. Zum Entfernen des
+Backends:
+
+```bash
+# Uberspace 7 und 8
+uberspace web backend del wiki.example.org/
+```
+
+Die Backend-Befehle richten nur die Weiterleitung ein; sie starten oder
+überwachen den Wiki-Prozess nicht. Dafür den passenden Supervisor- (U7) oder
+systemd-User-Dienst (U8) verwenden und sicherstellen, dass dieser die
+Auth-Variablen erhält. Siehe die
+[Uberspace-7-Anleitung](https://manual.uberspace.de/web-backends/) und die
+[Uberspace-8-Anleitung](https://u8manual.uberspace.de/web_backends/).
