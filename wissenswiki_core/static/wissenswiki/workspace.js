@@ -71,7 +71,7 @@ function render(side) {
     element(side, "identity").textContent = block ? "ID: " + block.id : "Noch nicht gespeichert";
     const relations = element(side, "relations"); relations.replaceChildren();
     const parts = element(side, "parts"); parts.replaceChildren();
-    const preview = element(side, "preview"); preview.textContent = "";
+    const preview = element(side, "preview"); preview.replaceChildren();
     if (!block) return;
     block.relations.forEach((relation, index) => {
         const li = document.createElement("li");
@@ -91,10 +91,14 @@ function render(side) {
         parts.append(li);
     });
     if (block.parts.length) {
-        preview.textContent = block.parts.map(id => {
+        for (const id of block.parts) {
             const part = find(id);
-            return part ? part.text : "[Bestandteil nicht gefunden: " + id + "]";
-        }).join("\n\n");
+            const content = document.createElement("div");
+            content.className = "markdown-content";
+            if (part) content.innerHTML = part.text_html;
+            else content.textContent = "[Bestandteil nicht gefunden: " + id + "]";
+            preview.append(content);
+        }
     }
 }
 function clean() {
@@ -155,7 +159,9 @@ async function relate(source, target) {
     if (!clean()) throw new Error(status.textContent);
     const from = find(state[source].id), to = find(state[target].id);
     if (!from || !to) throw new Error("Bitte zuerst beide Blöcke speichern und auswählen.");
-    await request("relate", {id:from.id, revision:from.revision, target:to.id, type:document.getElementById("type").value});
+    const type = document.getElementById("type").value;
+    if (!type) throw new Error("Keine aktivierten Beziehungstypen verfügbar.");
+    await request("relate", {id:from.id, revision:from.revision, target:to.id, type});
     await refresh(); render("left"); render("right");
     }, "Beziehung gespeichert.");
 }

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 from wissenswiki_core.registry import Registry
+from wissenswiki_core.rendering import render_markdown
 from wissenswiki_core.workspace import WorkspaceConflict, WorkspaceError
 
 MAX_BODY = 1024 * 1024
@@ -21,10 +22,14 @@ def api_get(registry: Registry, domain: str = "") -> dict:
         if domain:
             if domain not in registry.domains:
                 raise WorkspaceError("Unbekannte Domäne.")
-            return registry.domains[domain].snapshot()
-        if registry.workspace is None:
-            raise WorkspaceError("Bitte eine Domäne auswählen.")
-        return {"blocks": registry.workspace.list_blocks(), "errors": []}
+            result = registry.domains[domain].snapshot()
+        else:
+            if registry.workspace is None:
+                raise WorkspaceError("Bitte eine Domäne auswählen.")
+            result = {"blocks": registry.workspace.list_blocks(), "errors": []}
+        blocks = [{**block, "text_html": render_markdown(block["text"])} for block in result["blocks"]]
+        return {**result, "blocks": blocks,
+                "relation_types": [item.as_dict() for item in registry.relation_catalog]}
     except WorkspaceError as exc:
         raise ApiError(400, str(exc)) from exc
 

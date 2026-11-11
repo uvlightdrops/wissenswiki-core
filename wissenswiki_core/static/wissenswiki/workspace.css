@@ -14,5 +14,5 @@ textarea{min-height:45vh;resize:vertical}button{padding:.4rem .7rem;cursor:point
 .linking{display:flex;flex-direction:column;gap:.3rem}.linking button{width:100%}
 .status{color:#a52a2a;margin:0}.status:empty{display:none}
 ol,ul{padding-left:1.4rem}li button{font-size:.85rem}
-.identity{font-size:.8rem;overflow-wrap:anywhere}.preview{white-space:pre-wrap;background:#f6f7f5;padding:.6rem;overflow-wrap:anywhere}
+.identity{font-size:.8rem;overflow-wrap:anywhere}.preview{background:#f6f7f5;padding:.6rem;overflow-wrap:anywhere}
 @media(max-width:850px){.workspace{display:block}.sidebar{margin-bottom:.75rem}.sidebar ul{max-height:30vh}.columns{grid-template-columns:1fr}}

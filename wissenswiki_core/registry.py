@@ -18,9 +18,10 @@ from pathlib import Path
 
 from wissenswiki_core.discovery import markdown_domains
 from wissenswiki_core.domains import DocumentDomain
+from wissenswiki_core.relations import DEFAULT_CATALOG, RelationDefinition, build_catalog
 from wissenswiki_core.workspace import Workspace, WorkspaceError
 
-KEYS = {"WORKSPACE", "DOMAINS", "MARKDOWN_DATA"}
+KEYS = {"WORKSPACE", "DOMAINS", "MARKDOWN_DATA", "RELATION_CATALOG"}
 
 
 class ConfigError(ValueError):
@@ -31,6 +32,7 @@ class ConfigError(ValueError):
 class Registry:
     workspace: Workspace | None
     domains: dict[str, DocumentDomain] = field(default_factory=dict)
+    relation_catalog: tuple[RelationDefinition, ...] = DEFAULT_CATALOG
 
 
 def _path(value: object, what: str) -> Path:
@@ -46,8 +48,12 @@ def build_registry(config: Mapping) -> Registry:
     if unknown:
         raise ConfigError(f"unbekannte Schlüssel {sorted(unknown)}.")
     try:
+        catalog = build_catalog(config.get("RELATION_CATALOG"))
+    except ValueError as exc:
+        raise ConfigError(str(exc)) from exc
+    try:
         workspace_path = config.get("WORKSPACE")
-        workspace = Workspace(_path(workspace_path, "WORKSPACE")) if workspace_path else None
+        workspace = Workspace(_path(workspace_path, "WORKSPACE"), relation_catalog=catalog) if workspace_path else None
         domains: dict[str, DocumentDomain] = {}
         served = [workspace.root] if workspace else []
         for entry in config.get("DOMAINS") or []:
@@ -56,7 +62,7 @@ def build_registry(config: Mapping) -> Registry:
             if entry["name"] in domains:
                 raise ConfigError(f"Domäne {entry['name']} doppelt.")
             domain = DocumentDomain(_path(entry.get("source"), "source"), _path(entry.get("relations"), "relations"),
-                                    lenient=bool(entry.get("lenient", False)))
+                                    lenient=bool(entry.get("lenient", False)), relation_catalog=catalog)
             domains[entry["name"]] = domain
             served += [domain.source, domain.storage.root]
         data = config.get("MARKDOWN_DATA")
@@ -72,9 +78,10 @@ def build_registry(config: Mapping) -> Registry:
             for name, source, relations in found:
                 if name in domains:
                     raise ConfigError(f"Domäne {name} doppelt.")
-                domains[name] = DocumentDomain(source, relations, lenient=bool(data.get("lenient", True)))
+                domains[name] = DocumentDomain(source, relations, lenient=bool(data.get("lenient", True)),
+                                               relation_catalog=catalog)
     except WorkspaceError as exc:
         raise ConfigError(str(exc)) from exc
     if workspace is None and not domains:
         raise ConfigError("weder WORKSPACE noch Domänen konfiguriert.")
-    return Registry(workspace, domains)
+    return Registry(workspace, domains, relation_catalog=catalog)

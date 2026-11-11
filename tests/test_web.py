@@ -58,6 +58,8 @@ def basic_auth(username="álîçé", password="sëcret"):
 
 
 def test_pages_static_and_domain_api(server):
+    status, _, workspace = request(server, "GET", "/")
+    assert status == 200 and '<a href="/graph-header/">Wissensnetz öffnen</a>' in workspace
     status, headers, page = request(server, "GET", "/graph-header/?domain=Doku")
     assert status == 200 and "frame-ancestors 'none'" in headers["Content-Security-Policy"]
     assert 'href="/settings/"' in page and '/graph-header/?domain=Doku' in page and "${" not in page
@@ -68,6 +70,8 @@ def test_pages_static_and_domain_api(server):
     assert 'id="attribute-selection"' in settings_page
     assert "Dokumentkontext" in settings_page
     assert request(server, "GET", "/static/wissenswiki/graph.js")[0] == 200
+    assert request(server, "GET", "/static/wissenswiki/markdown.css")[0] == 200
+    assert 'href="/static/wissenswiki/markdown.css"' in page
     assert request(server, "GET", "/static/wissenswiki/../pages/graph.html")[0] == 404
     status, _, body = request(server, "GET", "/api?domain=Doku")
     assert status == 200 and json.loads(body)["blocks"]
@@ -188,6 +192,24 @@ def test_graph_pages_include_block_content_widget(view):
     assert '<summary>Blockinhalt</summary>' in page
     assert 'id="block-content"' in page
     assert 'aria-label="Inhalt von Ausgang und Ziel"' in page
+
+
+@pytest.mark.parametrize("view", ["graph", "graph-header"])
+def test_graph_pages_relation_type_widget_is_collapsed_by_default(view):
+    urls = PageUrls("/api", "/s/", "/", "/g/", "/gh/", "/st/")
+    page = render_page(view, urls=urls, token="t", path="/g/", workspace_enabled=True, domains=[])
+    assert '<details class="relation-widget"><summary>Beziehungen</summary>' in page
+    assert '<fieldset class="legend"><legend>Farben und Richtung</legend>' in page
+
+
+@pytest.mark.parametrize("view", ["graph", "graph-header"])
+def test_graph_pages_default_bubble_color_to_folder(view):
+    urls = PageUrls("/api", "/s/", "/", "/g/", "/gh/", "/st/")
+
+    page = render_page(view, urls=urls, token="t", path="/g/", workspace_enabled=True, domains=[])
+
+    assert '<option value="folder" selected>Nach Ordner</option>' in page
+    assert '<option value="uniform">Einheitlich</option>' in page
 
 
 @pytest.mark.parametrize("view", ["workspace", "graph", "graph-header", "settings"])

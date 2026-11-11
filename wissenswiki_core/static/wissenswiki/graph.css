@@ -10,6 +10,7 @@ button{cursor:pointer}header button{float:right}main{display:flex;gap:.75rem;pad
 .source-selection{border-color:#d97628}.target-selection{border-color:#b79ae2}
 .selection output{display:block;overflow-wrap:anywhere}
 .settings{margin:.6rem 0}.settings summary,details summary{cursor:pointer}
+.relation-widget{margin:.5rem 0}
 #folder-legend{font-size:.85rem;overflow-wrap:anywhere}.folder-swatch{display:inline-block;width:.8em;height:.8em;border-radius:50%;margin-right:.4em}
 #detail-attributes dt{font-weight:bold;overflow-wrap:anywhere}#detail-attributes dd{margin:0 0 .5rem;white-space:pre-wrap;overflow-wrap:anywhere}
 .attributes-widget{margin:0 .75rem .75rem;padding:.6rem .8rem;background:#202b2d;border:1px solid #405352;border-radius:.6rem}
@@ -18,14 +19,12 @@ button{cursor:pointer}header button{float:right}main{display:flex;gap:.75rem;pad
 .attribute-group{grid-column:1 / -1;font-weight:bold;padding-top:.5rem;color:#94d9d0}
 .block-content{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-top:.5rem}
 .block-content section{min-width:0}
-.block-content h2{font-size:1rem;margin:0 0 .5rem;overflow-wrap:anywhere}
-.block-content .source-content h2{color:#f5a64e}
-.block-content .target-content h2{color:#c89be5}
-.block-content pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
+.block-content section>h2{font-size:1rem;margin:0 0 .5rem;overflow-wrap:anywhere}
+.block-content .source-content>h2{color:#f5a64e}
+.block-content .target-content>h2{color:#c89be5}
+.block-content details pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-family:monospace}
 .controls .legend{border:0;padding:0;margin:.5rem 0}.controls .legend label{display:block;margin:.2rem 0}
-.controls .legend input{width:auto}.relation-type.red{color:#ff786e}.relation-type.blue{color:#72b7f2}
-.relation-type.green{color:#7fce91}.relation-type.orange{color:#f5a64e}.relation-type.purple{color:#c89be5}
-.relation-type.gray{color:#b7bfbe}.relation-type.darkred{color:#d26678}
+.controls .legend input{width:auto}
 #status{color:#ffaaa0;min-height:1.5em}.network{flex:1;min-width:0}
 #graph{display:block;width:100%;height:var(--graph-height,75vh);min-height:min(450px,30vh);background:#192326;border:1px solid #405352;border-radius:.6rem;touch-action:none}
 .node{cursor:grab}.node:active{cursor:grabbing}.node circle{stroke:#70bbb0;stroke-width:2}

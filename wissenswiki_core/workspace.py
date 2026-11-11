@@ -15,7 +15,7 @@ from uuid import uuid4
 
 import yaml
 
-from wissenswiki_core.relations import RELATION_TYPES
+from wissenswiki_core.relations import DEFAULT_CATALOG, RelationDefinition
 
 
 class WorkspaceError(ValueError):
@@ -35,8 +35,9 @@ def _identifier(value: object) -> str:
 class Workspace:
     """Store each block as a Markdown file with YAML metadata."""
 
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, *, relation_catalog: tuple[RelationDefinition, ...] = DEFAULT_CATALOG) -> None:
         self.root = root.resolve()
+        self.relation_catalog = relation_catalog
         if not self.root.is_dir():
             raise WorkspaceError("Arbeitsverzeichnis existiert nicht.")
 
@@ -145,10 +146,10 @@ class Workspace:
                 relation_type = payload.get("type")
                 if target == block_id or not isinstance(relation_type, str) or not relation_type.strip():
                     raise WorkspaceError("Bitte zwei verschiedene Blöcke und einen Beziehungstyp wählen.")
-                if action == "graph-relate" and relation_type not in dict(RELATION_TYPES):
-                    raise WorkspaceError("Unbekannter Beziehungstyp für die Netzansicht.")
+                if relation_type not in {item.key for item in self.relation_catalog if item.enabled}:
+                    raise WorkspaceError("Unbekannter oder deaktivierter Beziehungstyp.")
                 self._read(target)
-                relation = {"target": target, "type": relation_type.strip()}
+                relation = {"target": target, "type": relation_type}
                 if relation in block["relations"]:
                     raise WorkspaceError("Diese Beziehung besteht bereits.")
                 block["relations"].append(relation)

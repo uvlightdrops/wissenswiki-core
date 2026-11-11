@@ -5,8 +5,9 @@
 <title>Wissenswiki – Arbeitsraum</title>
 <meta name="workspace-token" content="${token}">
 <link rel="stylesheet" href="${static}workspace.css">
+<link rel="stylesheet" href="${static}markdown.css">
 </head><body>${app_navigation}<main>
-<header class="app-links"><a href="${url_graph}">Wissensnetz</a> · <a href="${url_graph_header}">Netz mit Filterleiste</a></header>
+<header class="app-links"><a href="${url_graph_header}">Wissensnetz öffnen</a></header>
 <p id="status" class="status" role="status" aria-live="polite"></p>
 <div class="workspace">
 <details class="sidebar" id="block-browser" open>
@@ -31,13 +32,9 @@
 </details>
 </section>
 <div class="linking">
-<label>Beziehungstyp <input id="type" list="relation-types" value="hängt zusammen"></label>
-<datalist id="relation-types">
-<option value="hängt zusammen"><option value="part-of"><option value="composed-of">
-<option value="extends"><option value="depends-on"><option value="reference">
-</datalist>
-<button id="relate">Links → rechts verbinden</button>
-<button id="relate-reverse">Rechts → links verbinden</button>
+<label>Beziehungstyp <select id="type"${relation_disabled}>${workspace_relation_options}</select></label>
+<button id="relate"${relation_disabled}>Links → rechts verbinden</button>
+<button id="relate-reverse"${relation_disabled}>Rechts → links verbinden</button>
 <button id="part">Rechts als Bestandteil von links</button>
 </div>
 <section id="right" aria-label="Rechter Block">

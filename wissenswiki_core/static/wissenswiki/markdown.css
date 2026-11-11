@@ -1,0 +1,13 @@
+.markdown-content{overflow-wrap:anywhere;line-height:1.5}
+.markdown-content>:first-child{margin-top:0}
+.markdown-content>:last-child{margin-bottom:0}
+.markdown-content h1,.markdown-content h2,.markdown-content h3{line-height:1.25;margin:1rem 0 .5rem}
+.markdown-content h1{font-size:1.3rem}
+.markdown-content h2{font-size:1.15rem}
+.markdown-content h3{font-size:1.05rem}
+.markdown-content pre{white-space:pre;overflow:auto;font-family:monospace;padding:.5rem;background:#8882}
+.markdown-content code{font-family:monospace}
+.markdown-content table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}
+.markdown-content th,.markdown-content td{border:1px solid #8886;padding:.3rem .5rem}
+.markdown-content blockquote{margin:.5rem 0;padding-left:.75rem;border-left:3px solid #8886}
+.preview>.markdown-content+.markdown-content{margin-top:1rem}

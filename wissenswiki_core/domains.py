@@ -11,20 +11,22 @@ import tempfile
 from urllib.parse import quote, unquote, urlsplit
 
 from wissenswiki_core.documents import DocumentError, list_documents, parse_document
-from wissenswiki_core.relations import RELATION_TYPES
+from wissenswiki_core.relations import DEFAULT_CATALOG, RelationDefinition
 from wissenswiki_core.workspace import Workspace, WorkspaceConflict, WorkspaceError
 
 _UMLAUTS = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"})
 
 
 class DocumentDomain:
-    def __init__(self, source: Path, relations: Path, *, lenient: bool = False) -> None:
+    def __init__(self, source: Path, relations: Path, *, lenient: bool = False,
+                 relation_catalog: tuple[RelationDefinition, ...] = DEFAULT_CATALOG) -> None:
         """``lenient`` reads files without front matter and derives IDs for untagged sections."""
         self.source = source.resolve()
         self.lenient = lenient
+        self.relation_catalog = relation_catalog
         if not self.source.is_dir():
             raise WorkspaceError(f"Quelldomäne existiert nicht: {self.source}")
-        self.storage = Workspace(relations)
+        self.storage = Workspace(relations, relation_catalog=relation_catalog)
         if self.storage.root.is_relative_to(self.source) or self.source.is_relative_to(self.storage.root):
             raise WorkspaceError("Quellen und Beziehungsverzeichnis müssen getrennt sein.")
 
@@ -71,7 +73,9 @@ class DocumentDomain:
                         "path": doc["path"], "linkable": bool(fragment),
                         "attributes": {"art": "Abschnitt", "block_id": block.block_id,
                                        "datei": doc["path"], "ordner": relative.parent.as_posix(),
-                                       "dokument_metadaten": metadata}}
+                                       "dokument_metadaten": metadata,
+                                       "block_metadaten": json.loads(json.dumps(
+                                           block.metadata, ensure_ascii=False, default=str))}}
                 indexed[block_id] = node
                 nodes.append(node)
             for relation in document.metadata.get("relations", []):
@@ -139,8 +143,8 @@ class DocumentDomain:
                     or source not in lookup or target not in lookup or source == target
                     or not lookup[source]["linkable"] or not lookup[target]["linkable"]):
                 raise WorkspaceError("Zwei verschiedene Dokumente oder Blöcke mit stabiler ID auswählen.")
-            if not isinstance(kind, str) or kind not in dict(RELATION_TYPES):
-                raise WorkspaceError("Unbekannter Beziehungstyp.")
+            if not isinstance(kind, str) or kind not in {item.key for item in self.relation_catalog if item.enabled}:
+                raise WorkspaceError("Unbekannter oder deaktivierter Beziehungstyp.")
             if {"target": target, "type": kind} in lookup[source]["relations"]:
                 raise WorkspaceError("Diese Beziehung besteht bereits.")
             relations, _ = self._read_relations()

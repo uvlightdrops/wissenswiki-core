@@ -6,6 +6,20 @@ const {join} = require("node:path");
 const vm = require("node:vm");
 const scripts = join(__dirname, "../wissenswiki_core/static/wissenswiki");
 
+test("sidebar omits missing headers but retains malformed headers and read errors", () => {
+    const source = readFileSync(join(scripts, "graph.js"), "utf8");
+    const filter = source.match(/const warnings = .*;/)[0];
+    const errors = [
+        "/docs/plain.md: YAML-Header fehlt",
+        "/docs/open.md: YAML-Header ist nicht abgeschlossen",
+        "/docs/invalid.md: YAML-Header ungültig: syntax",
+        "/docs/unreadable.md: Datei nicht lesbar",
+    ];
+    const ctx = vm.createContext({result: {errors}});
+    vm.runInContext(filter, ctx);
+    assert.equal(vm.runInContext("JSON.stringify(warnings)", ctx), JSON.stringify(errors.slice(1)));
+});
+
 function context(entries = {}) {
     const storage = new Map(Object.entries(entries));
     const ctx = vm.createContext({
@@ -18,12 +32,15 @@ function context(entries = {}) {
     return {ctx, storage, run: code => vm.runInContext(code, ctx)};
 }
 
-test("block preset excludes document and storage context, but keeps own wiki metadata", () => {
+test("block preset keeps section metadata and excludes document and storage context", () => {
     const {run} = context();
     assert.equal(run('loadAttributeSettings("Doku").preset'), "block");
-    for (const name of ["art", "block_id", "metadaten.status", "metadaten.project"]) {
+    for (const name of ["art", "block_id", "metadaten.status", "metadaten.project",
+        "block_metadaten.status"]) {
         assert.equal(run(`attributeVisible("${name}", loadAttributeSettings("Doku"))`), true);
     }
+    assert.equal(run('flattenAttributes({block_metadaten: {status: "active"}})["block_metadaten.status"]'),
+        "active");
     for (const name of ["datei", "ordner", "revision", "dokument_metadaten", "dokument_metadaten.status"]) {
         assert.equal(run(`attributeVisible("${name}", loadAttributeSettings("Doku"))`), false);
         assert.equal(run(`attributeVisible("${name}", {preset: "all", hidden: ["${name}"]})`), true);

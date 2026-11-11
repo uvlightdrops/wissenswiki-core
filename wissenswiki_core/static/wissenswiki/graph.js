@@ -16,12 +16,8 @@ const attributeValue = document.getElementById("attribute-value");
 const token = document.querySelector('meta[name="workspace-token"]').content;
 const domain = new URLSearchParams(location.search).get("domain") || "";
 const NS = "http://www.w3.org/2000/svg";
-const colors = {
-    "depends-on": "#ff786e", "part-of": "#72b7f2", "composed-of": "#7fce91",
-    "implements": "#f5a64e", "extends": "#c89be5", "references": "#b7bfbe",
-    "deprecates": "#d26678"
-};
-const width = 1100, height = 700, radius = 48;
+const colors = Object.create(null);
+const width = 1100, height = 700, radius = 72;
 let blocks = [], nodes = [], edges = [], dragged = null, moved = false, revision = "", detailId = "";
 let positions = new Map();
 const settingsKey = "wissenswiki.graph.v1." + (domain ? "domain." + domain : "wiki");
@@ -40,7 +36,7 @@ try {
 } catch (error) {
     settingsError = `Ansichtseinstellungen konnten nicht gelesen werden: ${error.message}`;
 }
-colorMode.value = savedSettings.color === "folder" ? "folder" : "uniform";
+colorMode.value = savedSettings.color === "uniform" ? "uniform" : "folder";
 let attributeSettings = {preset: "block", hidden: []};
 try { attributeSettings = loadAttributeSettings(domain); }
 catch (error) {
@@ -250,9 +246,19 @@ function showContent(container) {
         section.className = name + "-content";
         const title = document.createElement("h2");
         title.textContent = block ? `${heading}: ${label(block)}` : `${heading}: nicht gewählt`;
-        const text = document.createElement("pre");
-        text.textContent = block ? block.text || "Dieser Block hat keinen Textinhalt." : "Bitte einen Block im Netz auswählen.";
+        const text = document.createElement("div");
+        text.className = "markdown-content";
+        if (block && block.text) text.innerHTML = block.text_html;
+        else text.textContent = block ? "Dieser Block hat keinen Textinhalt." : "Bitte einen Block im Netz auswählen.";
         section.append(title, text);
+        if (block && block.text) {
+            const raw = document.createElement("details"), summary = document.createElement("summary");
+            summary.textContent = "Markdown-Quelltext";
+            const sourceText = document.createElement("pre");
+            sourceText.textContent = block.text;
+            raw.append(summary, sourceText);
+            section.append(raw);
+        }
         container.append(section);
     }
 }
@@ -340,9 +346,9 @@ function build() {
     nodes = visible.map((block, index) => {
         const previous = positions.get(block.id);
         const angle = index * 2.399963;
-        const distance = Math.min(290, 95 + Math.sqrt(index) * 55);
-        const node = {id:block.id, x:previous?.x ?? width / 2 + Math.cos(angle) * distance,
-            y:previous?.y ?? height / 2 + Math.sin(angle) * distance, vx:0, vy:0};
+        const distance = Math.min(430, 140 + Math.sqrt(index) * 75);
+        const node = {id:block.id, x:previous?.x ?? width / 2 + Math.cos(angle) * distance * 1.15,
+            y:previous?.y ?? height / 2 + Math.sin(angle) * distance * 0.8, vx:0, vy:0};
         const group = element("g", {class:"node", tabindex:"0", role:"button",
             "aria-label":`Block ${label(block)} auswählen`});
         const folder = block.attributes?.ordner;
@@ -424,7 +430,7 @@ function animate() {
     for (const edge of edges) {
         const dx = edge.to.x - edge.from.x, dy = edge.to.y - edge.from.y;
         const distance = Math.max(1, Math.hypot(dx, dy));
-        const force = (distance - 220) * 0.0015;
+        const force = (distance - 300) * 0.0015;
         edge.from.vx += dx / distance * force; edge.from.vy += dy / distance * force;
         edge.to.vx -= dx / distance * force; edge.to.vy -= dy / distance * force;
     }
@@ -457,11 +463,46 @@ async function load() {
     if (!response.ok) throw new Error(result.error || "Blöcke konnten nicht geladen werden.");
     blocks = result.blocks;
     revision = result.revision || "";
+    populateRelations(result.relation_types || []);
     populateSettings();
     build();
-    const warnings = result.errors || [];
+    const warnings = (result.errors || []).filter(error => !error.endsWith(": YAML-Header fehlt"));
     status.textContent = [settingsError, warnings.length ? `${warnings.length} Hinweise: ${warnings.join(" | ")}` : ""]
         .filter(Boolean).join(" | ");
+}
+function populateRelations(catalog) {
+    const legend = document.querySelector("fieldset.legend");
+    const selected = document.querySelector('input[name="relation-type"]:checked')?.value;
+    for (const entry of legend.querySelectorAll(".relation-type")) entry.remove();
+    for (const key of Object.keys(colors)) delete colors[key];
+    const known = new Map(catalog.map(item => [item.key, item]));
+    const used = new Set(blocks.flatMap(block => block.relations.map(item => item.type)));
+    const definitions = [...catalog.filter(item => item.enabled),
+        ...[...used].filter(key => !known.get(key)?.enabled).sort().map(key =>
+            known.get(key) || {key, label:key, description:"Gespeicherter, nicht konfigurierter Beziehungstyp.",
+                color:"gray", enabled:false})];
+    for (const item of catalog) colors[item.key] = item.color;
+    let first = true;
+    for (const item of definitions) {
+        colors[item.key] = item.color;
+        const line = document.createElement("label");
+        line.className = "relation-type";
+        line.title = item.description;
+        line.style.color = item.color;
+        if (item.enabled) {
+            const radio = document.createElement("input");
+            radio.type = "radio"; radio.name = "relation-type"; radio.value = item.key;
+            radio.checked = selected ? selected === item.key : first;
+            first = false;
+            line.append(radio);
+        }
+        const text = item.label === item.key ? item.key : `${item.label} (${item.key})`;
+        line.append(document.createTextNode(` ${text}${item.enabled ? "" : " – nur lesbar"}`));
+        legend.append(line);
+    }
+    const radios = legend.querySelectorAll('input[name="relation-type"]');
+    if (radios.length && !document.querySelector('input[name="relation-type"]:checked')) radios[0].checked = true;
+    document.getElementById("connect").disabled = !radios.length;
 }
 async function action(callback) {
     try { status.textContent = ""; await callback(); }
@@ -482,12 +523,14 @@ for (const control of [colorMode, relationFilter, attributeFilter, attributeValu
     });
 }
 document.getElementById("reset-settings").addEventListener("click", () => {
-    colorMode.value = "uniform"; folderFilter.value = ""; populateFiles("");
+    colorMode.value = "folder"; folderFilter.value = ""; populateFiles("");
     relationFilter.value = ""; attributeFilter.value = "";
     attributeValue.value = ""; attributeValue.disabled = true;
     filter.value = ""; page.value = "0"; build(); saveSettings();
 });
 document.getElementById("connect").addEventListener("click", () => action(async () => {
+    const relation = document.querySelector('input[name="relation-type"]:checked');
+    if (!relation) throw new Error("Keine aktivierten Beziehungstypen verfügbar.");
     const block = blocks.find(item => item.id === source.value);
     if (!block || !target.value || source.value === target.value) {
         throw new Error("Bitte zwei verschiedene Blöcke auswählen.");
@@ -495,7 +538,7 @@ document.getElementById("connect").addEventListener("click", () => action(async 
     const response = await fetch(apiUrl, {method:"POST",
         headers:{"Content-Type":"application/json", "X-CSRFToken":token},
         body:JSON.stringify({action:"graph-relate", id:block.id, revision:domain ? revision : block.revision,
-            target:target.value, type:document.querySelector('input[name="relation-type"]:checked').value, domain})});
+            target:target.value, type:relation.value, domain})});
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Beziehung konnte nicht gespeichert werden.");
     await load();

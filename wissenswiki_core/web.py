@@ -176,7 +176,8 @@ def make_handler(registry: Registry, *, public_origin: str | None = None,
                     self._send(303, location=url.path + "?domain=" + quote(next(iter(registry.domains)), safe=""))
                 else:
                     html = render_page(page, urls=URLS, token=token, path=url.path,
-                                       workspace_enabled=registry.workspace is not None, domains=registry.domains)
+                                       workspace_enabled=registry.workspace is not None, domains=registry.domains,
+                                       relation_catalog=registry.relation_catalog)
                     self._send(200, html.encode("utf-8"), "text/html; charset=utf-8")
             else:
                 self._send(404, "Nicht gefunden.".encode())

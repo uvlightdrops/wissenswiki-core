@@ -60,6 +60,56 @@ def test_lenient_domain_reads_headerless_files_and_derives_section_ids(tmp_path)
     assert (source / "buch.md").read_text() == text
 
 
+def test_block_meta_is_extracted_from_content_and_exposed_as_attributes(tmp_path):
+    source = tmp_path / "docs"
+    source.mkdir()
+    storage = tmp_path / "relations"
+    storage.mkdir()
+    (source / "buch.md").write_text(
+        "---\nproject: Books\n---\n# Buch\n## Abschnitt [abschnitt]\n\n"
+        "```yaml block-meta\nupdated: '2026-11-11 05'\nstatus: active\nrelations: []\n```\n\n"
+        "Sichtbarer Inhalt.\n"
+    )
+
+    node = next(item for item in DocumentDomain(source, storage).snapshot()["blocks"]
+                if item["id"] == "doc:buch.md#abschnitt")
+
+    assert node["text"] == "Sichtbarer Inhalt."
+    assert node["attributes"]["block_metadaten"] == {
+        "updated": "2026-11-11 05", "status": "active", "relations": []
+    }
+
+
+def test_regular_yaml_fence_stays_in_block_content(tmp_path):
+    source = tmp_path / "docs"
+    source.mkdir()
+    storage = tmp_path / "relations"
+    storage.mkdir()
+    content = "```yaml\nstatus: draft\n```"
+    (source / "buch.md").write_text(f"# Buch\n## Abschnitt [abschnitt]\n{content}")
+
+    node = next(item for item in DocumentDomain(source, storage, lenient=True).snapshot()["blocks"]
+                if item["id"] == "doc:buch.md#abschnitt")
+
+    assert node["text"] == content
+    assert node["attributes"]["block_metadaten"] == {}
+
+
+def test_invalid_block_meta_is_reported_as_document_error(tmp_path):
+    source = tmp_path / "docs"
+    source.mkdir()
+    storage = tmp_path / "relations"
+    storage.mkdir()
+    (source / "buch.md").write_text(
+        "# Buch\n## Abschnitt [abschnitt]\n```yaml block-meta\nstatus: [\n```\n"
+    )
+
+    snapshot = DocumentDomain(source, storage, lenient=True).snapshot()
+
+    assert snapshot["blocks"] == []
+    assert any("YAML-Block block-meta ungültig" in error for error in snapshot["errors"])
+
+
 def _write(path: Path, text: str = "# Titel\n") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -84,3 +134,18 @@ def test_markdown_domains_include_symlinked_folders_and_skip_served_sources(tmp_
     ]
     assert [path for _, _, path in found] == [relations / "anthro", relations / "anthro--extern"]
     assert all(path.is_dir() for _, _, path in found)
+
+
+@pytest.mark.parametrize("text,message", [
+    ("# Ohne Header\n", "YAML-Header fehlt"),
+    ("---\ntitle: Offen\n", "YAML-Header ist nicht abgeschlossen"),
+])
+def test_header_errors_distinguish_missing_from_unclosed(tmp_path, text, message):
+    source = tmp_path / "docs"
+    source.mkdir()
+    (source / "note.md").write_text(text)
+    (tmp_path / "relations").mkdir()
+    snapshot = DocumentDomain(source, tmp_path / "relations").snapshot()
+    assert snapshot["blocks"] == []
+    assert len(snapshot["errors"]) == 1
+    assert snapshot["errors"][0].endswith(": " + message)

@@ -1,2 +1,5 @@
 WORKSPACE: ~/wissenswiki
 DOMAINS: []
+RELATION_CATALOG:
+  preset: documentation
+  types: []

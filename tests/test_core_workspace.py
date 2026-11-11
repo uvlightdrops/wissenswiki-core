@@ -41,9 +41,9 @@ def test_invalid_targets_duplicate_relations_and_symlinks_are_rejected(tmp_path)
         workspace.update(first["id"], first["revision"], "relate", {"target": "../x", "type": "ref"})
     with pytest.raises(WorkspaceError):
         workspace.update(first["id"], first["revision"], "parts", {"parts": [first["id"]]})
-    first = workspace.update(first["id"], first["revision"], "relate", {"target": second["id"], "type": "ref"})
+    first = workspace.update(first["id"], first["revision"], "relate", {"target": second["id"], "type": "reference"})
     with pytest.raises(WorkspaceError, match="bereits"):
-        workspace.update(first["id"], first["revision"], "relate", {"target": second["id"], "type": "ref"})
+        workspace.update(first["id"], first["revision"], "relate", {"target": second["id"], "type": "reference"})
     first = workspace.update(first["id"], first["revision"], "unrelate", {"index": 0})
     assert first["relations"] == []
     link = tmp_path / ("a" * 32 + ".md")
